@@ -1,59 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { useExpense, GROUP_MEMBERS, SplitType } from "@/lib/expense-context";
-
-interface MemberSplit {
-  id: string;
-  name: string;
-  isYou?: boolean;
-  value: string; // share count, percent, or absolute amount
-  amount: number;
-}
-
-function calcSplits(
-  totalStr: string,
-  splitType: SplitType,
-  members: MemberSplit[]
-): MemberSplit[] {
-  const total = parseFloat(totalStr) || 0;
-
-  if (splitType === "equal") {
-    const active = members.filter((m) => parseFloat(m.value) !== 0);
-    const each = active.length > 0 ? total / active.length : 0;
-    return members.map((m) => ({
-      ...m,
-      value: parseFloat(m.value) === 0 ? "0" : "1",
-      amount: parseFloat(m.value) === 0 ? 0 : each,
-    }));
-  }
-
-  if (splitType === "share") {
-    const totalShares = members.reduce((sum, m) => sum + (parseFloat(m.value) || 0), 0);
-    return members.map((m) => {
-      const shares = parseFloat(m.value) || 0;
-      return {
-        ...m,
-        amount: totalShares > 0 ? (shares / totalShares) * total : 0,
-      };
-    });
-  }
-
-  if (splitType === "percent") {
-    return members.map((m) => {
-      const pct = parseFloat(m.value) || 0;
-      return { ...m, amount: (pct / 100) * total };
-    });
-  }
-
-  // absolute
-  return members.map((m) => ({
-    ...m,
-    amount: parseFloat(m.value) || 0,
-  }));
-}
+import { useExpense, SplitType } from "@/lib/expense-context";
+import { useSplit } from "@/lib/split-context";
+import { MemberAvatar } from "@/components/MemberAvatar";
+import { PageHeader } from "@/components/PageHeader";
+import { AiPromptBox } from "@/components/AiPromptBox";
 
 const SPLIT_TABS: { label: string; value: SplitType }[] = [
   { label: "Equal", value: "equal" },
@@ -65,81 +18,34 @@ const SPLIT_TABS: { label: string; value: SplitType }[] = [
 export default function SplitPage() {
   const router = useRouter();
   const { expense, setExpense } = useExpense();
-
-  const [splitType, setSplitType] = useState<SplitType>(expense.splitType);
-  const [members, setMembers] = useState<MemberSplit[]>(() =>
-    GROUP_MEMBERS.map((m) => ({
-      ...m,
-      value: splitType === "percent" ? "25" : "1",
-      amount: 0,
-    }))
-  );
-
-  // Recalculate amounts whenever total, splitType, or values change
-  const calculated = calcSplits(expense.amount, splitType, members);
-  const total = parseFloat(expense.amount) || 0;
-
-  const percentTotal = splitType === "percent"
-    ? members.reduce((sum, m) => sum + (parseFloat(m.value) || 0), 0)
-    : 0;
-
-  const absoluteTotal = splitType === "absolute"
-    ? members.reduce((sum, m) => sum + (parseFloat(m.value) || 0), 0)
-    : 0;
-
-  function handleSplitTypeChange(type: SplitType) {
-    setSplitType(type);
-    // Reset values for new type
-    setMembers((prev) =>
-      prev.map((m) => ({
-        ...m,
-        value: type === "percent" ? String((100 / GROUP_MEMBERS.length).toFixed(1)) : "1",
-      }))
-    );
-  }
-
-  function handleValueChange(id: string, val: string) {
-    setMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, value: val } : m))
-    );
-  }
+  const {
+    splitType,
+    members,
+    calculated,
+    total,
+    percentTotal,
+    absoluteTotal,
+    showValueColumn,
+    valueColumnLabel,
+    handleSplitTypeChange,
+    handleValueChange,
+  } = useSplit();
 
   function handleSave() {
     setExpense({ ...expense, splitType });
     toast.success("Expense saved successfully!");
   }
 
-  const showValueColumn = splitType !== "equal";
-  const valueColumnLabel =
-    splitType === "share" ? "Shares" :
-    splitType === "percent" ? "%" :
-    splitType === "absolute" ? "Amount" : "";
-
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
-        <button
-          onClick={() => router.back()}
-          className="text-gray-500 hover:text-gray-700 p-1 flex items-center gap-1"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-        <div className="text-center">
-          <h1 className="text-base font-semibold text-gray-800">Split expense</h1>
-          {expense.description && (
-            <p className="text-xs text-gray-500 truncate max-w-50">{expense.description}</p>
-          )}
-        </div>
-        <button
-          onClick={handleSave}
-          className="text-[#5bc5a7] font-semibold text-base hover:text-[#4aad91]"
-        >
-          Save
-        </button>
-      </div>
+      <PageHeader
+        onLeft={() => router.back()}
+        leftIcon="back"
+        title="Split expense"
+        subtitle={expense.description || undefined}
+        onSave={handleSave}
+      />
 
       {/* Total amount display */}
       <div className="px-4 py-4 border-b border-gray-100 bg-gray-50">
@@ -214,17 +120,8 @@ export default function SplitPage() {
               key={member.id}
               className={`grid ${showValueColumn ? "grid-cols-[1fr_80px_80px]" : "grid-cols-[1fr_80px]"} gap-2 py-3 items-center`}
             >
-              {/* Name */}
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-600 flex-shrink-0">
-                  {member.name[0]}
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {member.isYou ? "You" : member.name}
-                </span>
-              </div>
+              <MemberAvatar name={member.name} isYou={member.isYou} />
 
-              {/* Value input */}
               {showValueColumn && (
                 <div className="flex justify-center">
                   <input
@@ -238,7 +135,6 @@ export default function SplitPage() {
                 </div>
               )}
 
-              {/* Amount owed */}
               <div className="text-right">
                 <span className={`text-sm font-semibold ${member.amount > 0 ? "text-gray-800" : "text-gray-300"}`}>
                   ${member.amount.toFixed(2)}
@@ -261,6 +157,7 @@ export default function SplitPage() {
           </span>
         </div>
       </div>
+      <AiPromptBox />
     </div>
   );
 }

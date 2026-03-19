@@ -23,7 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} antialiased bg-gray-100 min-h-screen`}>
         <ExpenseProvider>
-          <div className="max-w-[480px] mx-auto bg-white min-h-screen relative">
+          <div className="max-w-120 mx-auto bg-white min-h-screen relative">
             {children}
           </div>
         </ExpenseProvider>
