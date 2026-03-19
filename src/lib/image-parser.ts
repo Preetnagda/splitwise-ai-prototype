@@ -1,5 +1,4 @@
-import { generateObject } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 import { getModel } from "./model-registry";
 
@@ -15,9 +14,9 @@ export async function parseImage<T extends z.ZodTypeAny>(
   schema: T,
   prompt: string
 ): Promise<z.infer<T>> {
-  const { object } = await generateObject({
-    model: getModel('image-parser-model'),
-    schema,
+  const { output } = await generateText({
+    model: getModel("image-parser-model"),
+    output: Output.object({ schema }),
     messages: [
       {
         role: "user",
@@ -29,5 +28,5 @@ export async function parseImage<T extends z.ZodTypeAny>(
     ],
   });
 
-  return object as z.infer<T>;
+  return output as z.infer<T>;
 }

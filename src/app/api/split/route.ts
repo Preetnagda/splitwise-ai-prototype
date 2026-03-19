@@ -15,6 +15,11 @@ export async function POST(req: Request) {
   console.log('INPUT MESSAGES', messages);
   const result = streamText({
     model: getModel("split-model"),
+    providerOptions: {
+      openai: {
+        reasoningEffort: 'low'
+      }
+    },
     output: Output.object({ schema: SplitResultSchema }),
     system: buildSplitSystemPrompt({ total, description, memberList }),
     messages: messages as ModelMessage[],

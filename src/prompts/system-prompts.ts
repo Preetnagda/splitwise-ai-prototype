@@ -24,6 +24,9 @@ Choose the most appropriate split type and assign a value to each member:
 Return a value for every member ID listed above.
 Assume unspecified amount to be equally divided.
 
-
 `;
 }
+
+export const imageParserPrompt = `Extract all line items and the total amount from this receipt image.
+Return each item with its name and amount. The sum of all item amounts should equal the total.
+If a tip or tax is present, include it as a separate item.`;

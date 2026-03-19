@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { useExpense, GROUP_MEMBERS } from "./expense-context";
 import { useSplit } from "./split-context";
 import { SplitResultSchema } from "./split-schema";
+import { Receipt } from "./image-parser-schema";
 import { z } from "zod";
 
 export interface ChatMessage {
@@ -32,11 +33,21 @@ function formatSplitResult(result: SplitResult): string {
   return `Split ${typeLabel[result.splitType]}: ${memberDescriptions}`;
 }
 
+function formatReceiptSummary(receipt: Receipt): string {
+  const itemList = receipt.items
+    .map((item) => `${item.name} $${item.amount.toFixed(2)}`)
+    .join(", ");
+  return `Receipt items: ${itemList}. Total: $${receipt.total.toFixed(2)}`;
+}
+
 interface AiContextValue {
   aiPrompt: string;
   isLoading: boolean;
+  isParsing: boolean;
+  attachedImage: string | null;
   messages: ChatMessage[];
   setAiPrompt: (prompt: string) => void;
+  setAttachedImage: (image: string | null) => void;
   handleAiSubmit: () => void;
 }
 
@@ -48,6 +59,8 @@ export function AiProvider({ children }: { children: ReactNode }) {
 
   const [aiPrompt, setAiPrompt] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
 
   const { submit, isLoading } = useObject({
     api: "/api/split",
@@ -57,7 +70,7 @@ export function AiProvider({ children }: { children: ReactNode }) {
         toast.error("Failed to process AI split. Check your API key.");
         return;
       }
-      console.log('OUTPUT MESSAGE', object);
+      console.log('OUTPUT MESSAGE:', object);
       applyAiResult(object.splitType, object.memberValues);
       setMessages((prev) => [
         ...prev,
@@ -70,13 +83,42 @@ export function AiProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  function handleAiSubmit() {
+  async function handleAiSubmit() {
     const prompt = aiPrompt.trim();
-    if (!prompt || isLoading) return;
+    if ((!prompt && !attachedImage) || isLoading || isParsing) return;
+
+    let imageContext = "";
+
+    if (attachedImage) {
+      setIsParsing(true);
+      try {
+        const res = await fetch("/api/parse-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: attachedImage }),
+        });
+        if (!res.ok) throw new Error("Image parsing failed");
+        const receipt: Receipt = await res.json();
+        if (!receipt.found) {
+          toast.error("No receipt found in the image.");
+          setIsParsing(false);
+          return;
+        }
+        imageContext = formatReceiptSummary(receipt);
+      } catch {
+        toast.error("Failed to parse receipt image.");
+        setIsParsing(false);
+        return;
+      }
+      setIsParsing(false);
+      setAttachedImage(null);
+    }
+
+    const fullContent = [prompt, imageContext].filter(Boolean).join("\n\n");
 
     const updatedMessages: ChatMessage[] = [
       ...messages,
-      { role: "user", content: prompt },
+      { role: "user", content: fullContent },
     ];
     setMessages(updatedMessages);
 
@@ -89,7 +131,18 @@ export function AiProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AiContext.Provider value={{ aiPrompt, isLoading, messages, setAiPrompt, handleAiSubmit }}>
+    <AiContext.Provider
+      value={{
+        aiPrompt,
+        isLoading,
+        isParsing,
+        attachedImage,
+        messages,
+        setAiPrompt,
+        setAttachedImage,
+        handleAiSubmit,
+      }}
+    >
       {children}
     </AiContext.Provider>
   );
