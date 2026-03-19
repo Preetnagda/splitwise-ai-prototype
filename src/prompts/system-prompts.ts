@@ -24,6 +24,10 @@ Choose the most appropriate split type and assign a value to each member:
 Return a value for every member ID listed above.
 Assume unspecified amount to be equally divided.
 
+Before responding, verify:
+- percent: all values sum to exactly 100
+- absolute: all values sum to exactly $${total}
+
 `;
 }
 

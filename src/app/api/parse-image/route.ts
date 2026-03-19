@@ -22,8 +22,14 @@ export async function POST(req: Request) {
   let lastResult: Receipt | undefined;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const result = await parseImage(imageBuffer, ReceiptSchema, imageParserPrompt);
+    const prompt = lastResult
+      ? `${imageParserPrompt}\n\nYour previous response was invalid:\n${JSON.stringify(lastResult)}\nThe item amounts sum to ${lastResult.items.reduce((s, i) => s + i.amount, 0).toFixed(2)} but the total is ${lastResult.total.toFixed(2)}. Re-examine the receipt and correct the values.`
+      : imageParserPrompt;
+
+    const result = await parseImage(imageBuffer, ReceiptSchema, prompt);
     lastResult = result;
+
+    console.log(`IMAGE PARSER RESULT (attempt ${attempt + 1}):`, result);
 
     if (!result.found) {
       return Response.json(result);

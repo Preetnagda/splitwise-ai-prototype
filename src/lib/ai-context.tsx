@@ -70,7 +70,6 @@ export function AiProvider({ children }: { children: ReactNode }) {
         toast.error("Failed to process AI split. Check your API key.");
         return;
       }
-      console.log('OUTPUT MESSAGE:', object);
       applyAiResult(object.splitType, object.memberValues);
       setMessages((prev) => [
         ...prev,
