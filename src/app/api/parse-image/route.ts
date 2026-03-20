@@ -2,7 +2,7 @@ import { parseImage } from "@/lib/image-parser";
 import { ReceiptSchema, Receipt } from "@/lib/image-parser-schema";
 import { imageParserPrompt } from "@/prompts/system-prompts";
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 2;
 const TOLERANCE = 0.01;
 
 function isTotalValid(receipt: Receipt): boolean {

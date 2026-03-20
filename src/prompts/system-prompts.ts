@@ -21,8 +21,10 @@ Choose the most appropriate split type and assign a value to each member:
 - percent: explicit percentages (must sum to 100)
 - absolute: fixed dollar amounts per person
 
-Return a value for every member ID listed above.
-Assume unspecified amount to be equally divided.
+Note:
+- Return a value for every member ID listed above.
+- Assume unspecified amount to be equally divided.
+- If there's a tax or tip, you need to split it proportionally based in items.
 
 Before responding, verify:
 - percent: all values sum to exactly 100

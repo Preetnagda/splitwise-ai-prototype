@@ -66,8 +66,12 @@ export function AiProvider({ children }: { children: ReactNode }) {
     api: "/api/split",
     schema: SplitResultSchema,
     onFinish({ object, error }) {
-      if (error || !object?.splitType || !object?.memberValues) {
-        toast.error("Failed to process AI split. Check your API key.");
+      if (error) {
+        toast.error("Oops, something went wrong.");
+        return;
+      }
+      if (!object?.splitType || !object?.memberValues) {
+        toast.error("Couldn't figure out the split. Try again");
         return;
       }
       applyAiResult(object.splitType, object.memberValues);
@@ -78,7 +82,7 @@ export function AiProvider({ children }: { children: ReactNode }) {
       setAiPrompt("");
     },
     onError() {
-      toast.error("Failed to process AI split. Check your API key.");
+      toast.error("Oops, something went wrong.");
     },
   });
 
@@ -96,16 +100,16 @@ export function AiProvider({ children }: { children: ReactNode }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: attachedImage }),
         });
-        if (!res.ok) throw new Error("Image parsing failed");
+        if (!res.ok) throw new Error();
         const receipt: Receipt = await res.json();
         if (!receipt.found) {
-          toast.error("No receipt found in the image.");
+          toast.error("We can't understand this image. Try with again with a different one.");
           setIsParsing(false);
           return;
         }
         imageContext = formatReceiptSummary(receipt);
       } catch {
-        toast.error("Failed to parse receipt image.");
+        toast.error("We can't process images at the moment");
         setIsParsing(false);
         return;
       }

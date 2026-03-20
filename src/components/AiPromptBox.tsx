@@ -2,9 +2,13 @@
 
 import { useRef } from "react";
 import { useAi } from "@/lib/ai-context";
+import { AttachIcon } from "@/components/image/AttachIcon";
+import { CloseIcon } from "@/components/image/CloseIcon";
+import { SpinnerIcon } from "@/components/image/SpinnerIcon";
+import { SendIcon } from "@/components/image/SendIcon";
 
 export function AiPromptBox() {
-  const { aiPrompt, isLoading, isParsing, attachedImage, setAiPrompt, setAttachedImage, handleAiSubmit } = useAi();
+  const { aiPrompt, isLoading, isParsing, attachedImage, setAiPrompt, setAttachedImage, handleAiSubmit, messages } = useAi();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,9 +34,7 @@ export function AiPromptBox() {
             onClick={() => setAttachedImage(null)}
             className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gray-500 flex items-center justify-center"
           >
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <CloseIcon width={8} height={8} stroke="white" />
           </button>
         </div>
       )}
@@ -44,9 +46,7 @@ export function AiPromptBox() {
           disabled={busy}
           className="shrink-0 text-gray-400 hover:text-gray-600 disabled:opacity-40 mb-1"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-          </svg>
+          <AttachIcon width={18} height={18} />
         </button>
         <input
           ref={fileInputRef}
@@ -70,7 +70,7 @@ export function AiPromptBox() {
               handleAiSubmit();
             }
           }}
-          placeholder="Describe how to split this expense…"
+          placeholder={messages.length == 0 ? "Describe how to split this expense..." : "Something not quite right? Ask me to fix it."}
           rows={1}
           disabled={busy}
           className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none resize-none max-h-32 leading-5 py-1 disabled:opacity-50"
@@ -81,16 +81,7 @@ export function AiPromptBox() {
           disabled={!canSubmit}
           className="shrink-0 w-8 h-8 rounded-full bg-[#5bc5a7] flex items-center justify-center transition-colors hover:bg-[#4aad91] disabled:opacity-40 disabled:cursor-not-allowed mb-0.5"
         >
-          {busy ? (
-            <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-            </svg>
-          ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="19" x2="12" y2="5" />
-              <polyline points="5 12 12 5 19 12" />
-            </svg>
-          )}
+          {busy ? <SpinnerIcon width={14} height={14} stroke="white" /> : <SendIcon width={14} height={14} stroke="white" />}
         </button>
       </div>
       <p className="text-[10px] text-gray-400 mt-1.5 text-center">
