@@ -35,4 +35,20 @@ Before responding, verify:
 
 export const imageParserPrompt = `Extract all line items and the total amount from this receipt image.
 Return each item with its name and amount. The sum of all item amounts should equal the total.
+
+Note:
+- Double check the price of each item.
+
 If a tip or tax is present, include it as a separate item.`;
+
+export function buildImageParserPromptWithIncorrectValue(incorrectResponse: any, actualTotal: number, incorrectTotal: number): string{
+  return imageParserPrompt + `
+  
+  Example of incorrect value:
+  ${incorrectResponse}
+
+  Item amounts sum to ${incorrectTotal} but the actual total is ${actualTotal}.
+  Re examine receipt and correct the line items that are wrong in the above object.
+  `;
+
+}

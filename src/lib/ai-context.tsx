@@ -33,11 +33,18 @@ function formatSplitResult(result: SplitResult): string {
   return `Split ${typeLabel[result.splitType]}: ${memberDescriptions}`;
 }
 
-function formatReceiptSummary(receipt: Receipt): string {
+function formatReceiptSummary(receipt: Receipt): {message: string, complexity: 'low' | 'high'} {
+  let imageComplexity: 'low'|'high' = "low";
   const itemList = receipt.items
     .map((item) => `${item.name} $${item.amount.toFixed(2)}`)
     .join(", ");
-  return `Receipt items: ${itemList}. Total: $${receipt.total.toFixed(2)}`;
+  if(receipt.items.length >= 10){
+    imageComplexity = 'high';
+  }
+  return {
+    message: `Receipt items: ${itemList}. Total: $${receipt.total.toFixed(2)}`,
+    complexity: imageComplexity
+  }
 }
 
 interface AiContextValue {
@@ -90,7 +97,10 @@ export function AiProvider({ children }: { children: ReactNode }) {
     const prompt = aiPrompt.trim();
     if ((!prompt && !attachedImage) || isLoading || isParsing) return;
 
-    let imageContext = "";
+    let imageContext = {
+      message: '',
+      complexity: ''
+    };
 
     if (attachedImage) {
       setIsParsing(true);
@@ -117,7 +127,7 @@ export function AiProvider({ children }: { children: ReactNode }) {
       setAttachedImage(null);
     }
 
-    const fullContent = [prompt, imageContext].filter(Boolean).join("\n\n");
+    const fullContent = [prompt, imageContext.message].filter(Boolean).join("\n\n");
 
     const updatedMessages: ChatMessage[] = [
       ...messages,
@@ -130,6 +140,7 @@ export function AiProvider({ children }: { children: ReactNode }) {
       description: expense.description,
       members: GROUP_MEMBERS.map((m) => ({ id: m.id, name: m.isYou ? "You" : m.name })),
       messages: updatedMessages,
+      complexity: imageContext.complexity
     });
   }
 

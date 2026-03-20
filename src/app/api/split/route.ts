@@ -19,24 +19,31 @@ const calculatorTool = tool({
 });
 
 export async function POST(req: Request) {
-  const { total, description, members, messages } = await req.json();
+  const { total, description, members, messages, complexity } = await req.json();
+
+  let reasoningEffort = 'low';
+  if(complexity == 'high'){
+    reasoningEffort = 'medium';
+  }
 
   const memberList = (members as { id: string; name: string }[])
     .map((m) => `- id: "${m.id}", name: "${m.name}"`)
     .join("\n");
 
+  console.log('Starting split AI call', {
+    reasoningEffort, messages
+  });
+
   const result = streamText({
     model: getModel("split-model"),
     providerOptions: {
-      openai: {
-        reasoningEffort: "low",
-      },
+      openai: { reasoningEffort },
     },
     tools: { calculator: calculatorTool },
     output: Output.object({ schema: SplitResultSchema }),
     system: buildSplitSystemPrompt({ total, description, memberList }),
     messages: messages as ModelMessage[],
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(15),
     onStepFinish({ stepNumber, finishReason, usage, toolCalls, toolResults }) {
       console.log(`[split] step=${stepNumber} finish=${finishReason} tokens=${usage.inputTokens}in/${usage.outputTokens}out`);
       for (const call of toolCalls) {
