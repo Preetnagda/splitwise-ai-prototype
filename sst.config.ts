@@ -20,7 +20,7 @@ export default $config({
 
     const allSecrets = Object.values(secrets);
 
-    const domainName = $app.stage == "production" ? "visory-assignment.preetnagda.com" : "localhost:3000";
+    const domainName = $app.stage == "production" ? "splitwise-ai.preetnagda.com" : "localhost:3000";
 
     new sst.aws.Nextjs("splitwise-ai", {
       link: [...allSecrets],
